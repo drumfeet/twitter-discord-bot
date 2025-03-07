@@ -11,15 +11,15 @@ function getTwitterFormattedTime(date) {
   return new Date(date).toISOString()
 }
 
-// Update CONFIG to use Twitter's expected format
+// Update CONFIG to include multiple user IDs
 const CONFIG = {
-  TWITTER_USER_ID: process.env.TWITTER_USER_ID,
+  TWITTER_USER_IDS: process.env.TWITTER_USER_IDS.split(","), // comma-separated IDs in .env
   DISCORD_CHANNEL_ID: process.env.DISCORD_CHANNEL_ID,
   CHECK_INTERVAL: 15 * 60 * 1000, // 15 minutes
   TWEET_PARAMS: {
-    exclude: ["replies"],
-    max_results: 5,
-    start_time: getTwitterFormattedTime(new Date()), // ISO 8601 format for Twitter API
+    query: "", // Will be built dynamically
+    max_results: 10,
+    start_time: getTwitterFormattedTime(new Date()),
   },
 }
 
@@ -66,11 +66,12 @@ async function checkForNewTweets() {
       appSecret: process.env.TWITTER_API_SECRET,
     })
     const twitterClient = await client.appLogin()
-
-    const tweets = await twitterClient.v2.userTimeline(
-      CONFIG.TWITTER_USER_ID,
-      CONFIG.TWEET_PARAMS
-    )
+    
+    const query = CONFIG.TWITTER_USER_IDS.map((id) => `from:${id}`).join(" OR ")
+    const tweets = await twitterClient.v2.search({
+      ...CONFIG.TWEET_PARAMS,
+      query: query,
+    })
 
     const resetTime = new Date(tweets.rateLimit.reset * 1000)
     console.log("Rate limits:", {
