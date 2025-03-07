@@ -36,6 +36,14 @@ const discordClient = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 })
 
+// Initialize Twitter client with User Auth (OAuth 1.0a)
+const twitterClient = new TwitterApi({
+  appKey: process.env.TWITTER_API_KEY,
+  appSecret: process.env.TWITTER_API_SECRET,
+  accessToken: process.env.TWITTER_ACCESS_TOKEN,
+  accessSecret: process.env.TWITTER_ACCESS_SECRET,
+})
+
 async function sendTweetToDiscord(channel, tweet) {
   try {
     await channel.send({
@@ -59,13 +67,6 @@ function sleep(ms) {
 async function checkForNewTweets() {
   try {
     console.log(`Checking for new tweets at ${formatUTCTime(new Date())}...`)
-
-    // App Auth (OAuth 2.0) for higher rate limits
-    const client = new TwitterApi({
-      appKey: process.env.TWITTER_API_KEY,
-      appSecret: process.env.TWITTER_API_SECRET,
-    })
-    const twitterClient = await client.appLogin()
 
     const tweets = await twitterClient.v2.userTimeline(
       CONFIG.TWITTER_USER_ID,
@@ -130,6 +131,13 @@ async function checkForNewTweets() {
         `Rate limit reset at ${formatUTCTime(new Date())}, retrying...`
       )
       return checkForNewTweets()
+    } else if (error.code === 403) {
+      console.error("Twitter API Authentication Error:", {
+        message: error.message,
+        code: error.code,
+        data: error.data, // This might contain more details
+        timestamp: formatUTCTime(new Date()),
+      })
     }
     console.error("Error:", {
       message: error.message,
