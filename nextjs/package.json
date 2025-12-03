@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "discord.js": "^14.18.0",
-    "next": "15.2.4",
+    "next": "15.4.8",
     "twitter-api-v2": "^1.22.0"
   }
 }
